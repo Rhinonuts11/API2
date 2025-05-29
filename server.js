@@ -63,6 +63,65 @@ app.patch('/api/orders/:id', (req, res) => {
   res.json(order);
 });
 
+// --- Dashboard Stats Endpoints ---
+
+// GET /api/stats/orders
+app.get('/api/stats/orders', (req, res) => {
+  const totalOrders = orders.length;
+  const completedOrders = orders.filter(o => o.status === 'completed').length;
+  const pendingOrders = orders.filter(o => o.status === 'pending').length;
+  const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+
+  res.json({
+    totalOrders,
+    completedOrders,
+    pendingOrders,
+    totalRevenue,
+  });
+});
+
+// GET /api/stats/inventory (placeholder for now)
+app.get('/api/stats/inventory', (req, res) => {
+  res.json({
+    totalItems: 128,
+    lowStockItems: 5,
+    totalValue: 32000,
+  });
+});
+
+// GET /api/stats/sales - 7-day sales overview
+app.get('/api/stats/sales', (req, res) => {
+  const days = 7;
+  const labels = [];
+  const values = [];
+
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const label = date.toISOString().split('T')[0];
+
+    labels.push(label);
+    const dailySales = orders
+      .filter(o => o.createdAt.startsWith(label))
+      .reduce((sum, o) => sum + (o.total || 0), 0);
+    values.push(dailySales);
+  }
+
+  res.json({ labels, values });
+});
+
+// GET /api/logs/recent-orders - Activity log
+app.get('/api/logs/recent-orders', (req, res) => {
+  const recent = [...orders]
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 5)
+    .map(o => ({
+      playerName: o.customer || 'Unknown',
+      timestamp: o.createdAt,
+    }));
+  res.json(recent);
+});
+
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
