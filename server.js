@@ -9,56 +9,43 @@ app.use(cors());
 app.use(express.json());
 
 let orders = [];
+let tableOrders = [];
 
-// POST /api/orders - Create standard order
+// POST /api/orders - Create new counter order
 app.post('/api/orders', (req, res) => {
   const order = {
     id: uuidv4(),
     ...req.body,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    type: 'standard'
   };
   orders.push(order);
   res.status(201).json(order);
 });
 
-// POST /api/table-orders - Create table order
+// POST /api/table-orders - Create new table order
 app.post('/api/table-orders', (req, res) => {
-  const { tableNumber, items, total, customerName } = req.body;
-
-  if (!tableNumber || !items || !Array.isArray(items)) {
-    return res.status(400).json({ error: 'Missing or invalid fields' });
-  }
-
-  const order = {
+  const tableOrder = {
     id: uuidv4(),
-    tableNumber,
-    customer: {
-      username: customerName || `Table ${tableNumber}`
-    },
-    items,
-    total,
-    status: 'pending',
+    ...req.body,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    type: 'table'
   };
-
-  orders.push(order);
-  res.status(201).json(order);
+  tableOrders.push(tableOrder);
+  res.status(201).json(tableOrder);
 });
 
-// GET /api/orders - List all orders or filter by type (?type=table or standard)
+// GET /api/orders - List all counter orders
 app.get('/api/orders', (req, res) => {
-  const { type } = req.query;
-  if (type) {
-    return res.json(orders.filter(order => order.type === type));
-  }
   res.json(orders);
 });
 
-// GET /api/orders/:id - Get specific order
+// GET /api/table-orders - List all table orders
+app.get('/api/table-orders', (req, res) => {
+  res.json(tableOrders);
+});
+
+// GET /api/orders/:id - Get single order
 app.get('/api/orders/:id', (req, res) => {
   const order = orders.find(o => o.id === req.params.id);
   if (!order) return res.status(404).json({ error: 'Order not found' });
@@ -74,15 +61,6 @@ app.patch('/api/orders/:id', (req, res) => {
   order.updatedAt = new Date().toISOString();
 
   res.json(order);
-});
-
-// DELETE /api/orders/:id - Delete order (optional)
-app.delete('/api/orders/:id', (req, res) => {
-  const index = orders.findIndex(o => o.id === req.params.id);
-  if (index === -1) return res.status(404).json({ error: 'Order not found' });
-
-  const deleted = orders.splice(index, 1)[0];
-  res.json({ message: 'Order deleted', order: deleted });
 });
 
 app.listen(PORT, () => {
