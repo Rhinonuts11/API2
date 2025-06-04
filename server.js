@@ -1,13 +1,15 @@
-// /api/proxyRoblox.js
+// server.js
 import express from 'express';
 import fetch from 'node-fetch';
 import cors from 'cors';
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+
 app.use(cors());
 app.use(express.json());
 
-app.post('/api/roblox/proxy', async (req, res) => {
+app.post('/api/roblox-proxy', async (req, res) => {
   const { endpoint, apiKey } = req.body;
 
   if (!endpoint || !apiKey) {
@@ -16,15 +18,27 @@ app.post('/api/roblox/proxy', async (req, res) => {
 
   try {
     const robloxRes = await fetch(endpoint, {
-      headers: { 'x-api-key': apiKey }
+      headers: {
+        'x-api-key': apiKey,
+        'Content-Type': 'application/json'
+      }
     });
 
-    const data = await robloxRes.json();
-    res.status(robloxRes.status).json(data);
+    const contentType = robloxRes.headers.get('content-type');
+    const isJson = contentType && contentType.includes('application/json');
+    const data = isJson ? await robloxRes.json() : await robloxRes.text();
+
+    res.status(robloxRes.status).json(isJson ? data : { data });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server failed to fetch Roblox API' });
+    console.error('Proxy error:', err);
+    res.status(500).json({ error: 'Failed to fetch from Roblox API' });
   }
 });
 
-app.listen(3001, () => console.log('Proxy server listening on port 3001'));
+app.get('/', (req, res) => {
+  res.send('Roblox Proxy API is running');
+});
+
+app.listen(PORT, () => {
+  console.log(`✅ Roblox Proxy Server running on port ${PORT}`);
+});
