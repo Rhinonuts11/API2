@@ -1,11 +1,8 @@
-// server.js
-import express from 'express';
-import fetch from 'node-fetch';
-import cors from 'cors';
+const express = require('express');
+const cors = require('cors');
+const fetch = require('node-fetch');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
 app.use(cors());
 app.use(express.json());
 
@@ -18,27 +15,16 @@ app.post('/api/roblox-proxy', async (req, res) => {
 
   try {
     const robloxRes = await fetch(endpoint, {
-      headers: {
-        'x-api-key': apiKey,
-        'Content-Type': 'application/json'
-      }
+      headers: { 'x-api-key': apiKey }
     });
 
-    const contentType = robloxRes.headers.get('content-type');
-    const isJson = contentType && contentType.includes('application/json');
-    const data = isJson ? await robloxRes.json() : await robloxRes.text();
-
-    res.status(robloxRes.status).json(isJson ? data : { data });
+    const data = await robloxRes.json();
+    res.status(robloxRes.status).json(data);
   } catch (err) {
-    console.error('Proxy error:', err);
-    res.status(500).json({ error: 'Failed to fetch from Roblox API' });
+    console.error(err);
+    res.status(500).json({ error: 'Server failed to fetch Roblox API' });
   }
 });
 
-app.get('/', (req, res) => {
-  res.send('Roblox Proxy API is running');
-});
-
-app.listen(PORT, () => {
-  console.log(`✅ Roblox Proxy Server running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
